@@ -1,0 +1,34 @@
+version: '3.7'
+
+services:
+  server:
+    build:
+      context: ./
+      dockerfile: ./server.Dockerfile
+    container_name: word-of-wisdom-server
+    environment:
+      SERVER_ADDR: ":8099"
+      CHALLENGE_TIMEOUT: "20s"
+      CHALLENGE_COMPLEXITY: "10" 
+      READ_TIMEOUT: "30s"
+    ports:
+      - "8099:8099"
+    networks:
+      - word-of-wisdom
+
+  client:
+    build:
+      context: ./
+      dockerfile: ./client.Dockerfile
+    container_name: word-of-wisdom-client
+    environment:
+      READ_TIMEOUT: "30s"
+      SERVER_ADDR: "server:8099"
+    networks:
+      - word-of-wisdom
+    depends_on:
+      - server
+
+networks:
+  word-of-wisdom:
+    driver: bridge

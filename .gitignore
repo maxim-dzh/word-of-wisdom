@@ -1,0 +1,25 @@
+# IDEs
+.vscode
+.idea
+*~
+
+# Apple related
+.DS_Store
+
+# Windows related
+*.exe
+*.exe~
+*.dll
+*.dylib
+
+# Unix related
+*.so
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories
+vendor/

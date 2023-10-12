@@ -1,0 +1,141 @@
+issues:
+  exclude-rules:
+    - linters:
+        - gomnd
+      path: _test\.go
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - depguard
+    - dogsled
+    - errcheck
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gofmt
+    - goimports
+    - revive
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - exportloopref
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - prealloc
+    - nolintlint
+    - noctx
+    - whitespace
+    - misspell
+    - goimports
+linters-settings:
+  depguard:
+    rules:
+      main:
+        deny:
+          - desc: CVE-2021-3538
+            pkg: github.com/satori/go.uuid
+          - desc: SNYK-GOLANG-GITHUBCOMDGRIJALVAJWTGO-596515
+            pkg: github.com/dgrijalva/jwt-go
+          - desc: obsoleted by github.com/uber-go/mock
+            pkg: github.com/golang/mock
+        files:
+          - $all
+  errcheck:
+    check-blank: false
+    check-type-assertions: true
+  funlen:
+    lines: 300
+    statements: 150
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+  gocritic:
+    disabled-checks:
+      - unnamedResult
+      - sloppyReassign
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+    settings:
+      hugeparam:
+        sizethreshold: 1024
+      rangevalcopy:
+        sizethreshold: 512
+        skiptestfuncs: true
+  gocyclo:
+    min-complexity: 30
+  goimports:
+    local-prefixes: node-top-up-service
+  gomnd:
+    settings:
+      mnd:
+        checks:
+          - argument
+          - case
+          - condition
+          - return
+  govet:
+    check-shadowing: true
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+  lll:
+    line-length: 192
+  misspell:
+    locale: US
+  revive:
+    ignore-generated-header: true
+    rules:
+      - name: atomic
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+    severity: warning
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+run:
+  build-tags: []
+  issues-exit-code: 1
+  modules-download-mode: readonly
+  skip-dirs:
+    - tests
+  skip-dirs-use-default: true
+  skip-files: []
+  tests: false
+  timeout: 10m
