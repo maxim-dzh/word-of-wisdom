@@ -111,6 +111,7 @@ func (s *server) processConn(conn net.Conn) {
 		s.logger.Error("origin challenge not found", "error", err)
 		return
 	}
+	defer s.storage.DeleteChallenge(challengeResult.Random)
 	err = s.verify(originChallenge, challengeResult)
 	if err != nil {
 		s.logger.Error("the challenge failed", "error", err)
@@ -122,7 +123,6 @@ func (s *server) processConn(conn net.Conn) {
 		s.logger.Error("failed to return the word of wisdom", "error", err)
 		return
 	}
-	s.storage.DeleteChallenge(challengeResult.Random)
 }
 
 func (s *server) parseMessage(msg string) (header *hashcash.Header, err error) {
