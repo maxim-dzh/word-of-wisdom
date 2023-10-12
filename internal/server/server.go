@@ -12,17 +12,25 @@ import (
 
 	log "golang.org/x/exp/slog"
 
-	"github.com/maxim-dzh/word-of-wisdom/internal/hashcash"
+	"github.com/maxim-dzh/word-of-wisdom/internal/domain"
 )
 
 type storage interface {
-	SetChallenge(id string, header *hashcash.Header)
-	GetChallenge(id string) (header *hashcash.Header, exists bool)
+	SetChallenge(id string, header *domain.HashcashHeader)
+	GetChallenge(id string) (header *domain.HashcashHeader, exists bool)
 	DeleteChallenge(id string)
 }
 
 type wisdomWordsService interface {
 	GetWord() string
+}
+
+type hashcashService interface {
+	CalculateCounter(ctx context.Context, header *domain.HashcashHeader) (err error)
+	FormatHeader(header *domain.HashcashHeader) string
+	CheckBits(bitsAmount uint, resultHash [32]byte) bool
+	ParseString(header string) (*domain.HashcashHeader, error)
+	GenerateHeader(bits uint, resource string) (*domain.HashcashHeader, error)
 }
 
 type server struct {
@@ -31,6 +39,7 @@ type server struct {
 	addr                string
 	storage             storage
 	wisdomWordsService  wisdomWordsService
+	hashcashService     hashcashService
 	challengeComplexity uint
 	challengeTimeout    time.Duration
 	readTimeout         time.Duration
@@ -87,21 +96,21 @@ func (s *server) processConn(conn net.Conn) {
 	// if the message is empty it's a challenge request
 	if msg == "" {
 		// create, save and return a challenge as a hashcash header
-		var challenge *hashcash.Header
-		challenge, err = hashcash.NewHeader(s.challengeComplexity, s.id)
+		var header *domain.HashcashHeader
+		header, err = s.hashcashService.GenerateHeader(s.challengeComplexity, s.id)
 		if err != nil {
 			s.logger.Error("failed to generate a hashcash header", "error", err)
 			return
 		}
-		s.storage.SetChallenge(challenge.Random, challenge)
-		err = s.writeMesssage(conn, challenge.String())
+		s.storage.SetChallenge(header.Random, header)
+		err = s.writeMesssage(conn, s.hashcashService.FormatHeader(header))
 		if err != nil {
 			s.logger.Error("failed to return the challenge", "error", err)
 			return
 		}
 		return
 	}
-	challengeResult, err := s.parseMessage(msg)
+	challengeResult, err := s.hashcashService.ParseString(msg)
 	if err != nil {
 		s.logger.Error("failed to parse the message", "error", err)
 		return
@@ -125,24 +134,15 @@ func (s *server) processConn(conn net.Conn) {
 	}
 }
 
-func (s *server) parseMessage(msg string) (header *hashcash.Header, err error) {
-	header, err = hashcash.ParseString(msg)
-	if err != nil {
-		err = fmt.Errorf("failed to parse string header: %w", err)
-		return
-	}
-	return
-}
-
 // verify checks the challenge solution for correctness
 // and if it's satisfying the requirements
-func (s *server) verify(challengeHeader, challengeResult *hashcash.Header) (err error) {
+func (s *server) verify(challengeHeader, challengeResult *domain.HashcashHeader) (err error) {
 	// we make counters equal, in order to compare other fields
 	// by comparing two strings
 	counter := challengeResult.Counter
 	challengeResult.Counter = 0
 	challengeHeader.Counter = 0
-	if challengeResult.String() != challengeHeader.String() {
+	if s.hashcashService.FormatHeader(challengeResult) != s.hashcashService.FormatHeader(challengeHeader) {
 		return fmt.Errorf("invalid challenge result")
 	}
 	if time.Now().Unix()-challengeHeader.Timestamp > int64(s.challengeTimeout.Seconds()) {
@@ -150,8 +150,8 @@ func (s *server) verify(challengeHeader, challengeResult *hashcash.Header) (err 
 	}
 	// return the resulting counter and check zero bits amount
 	challengeResult.Counter = counter
-	hash := sha256.Sum256([]byte(challengeResult.String()))
-	if !hashcash.BitsAmountIsCorrect(challengeHeader.Bits, hash) {
+	hash := sha256.Sum256([]byte(s.hashcashService.FormatHeader(challengeResult)))
+	if !s.hashcashService.CheckBits(challengeHeader.Bits, hash) {
 		return fmt.Errorf("the challenge result isn't correct")
 	}
 	s.logger.Info("the challenge has resolved", "hash", fmt.Sprintf("%x", hash))
@@ -172,6 +172,7 @@ func NewServer(
 	readTimeout time.Duration,
 	storage storage,
 	wisdomWordsService wisdomWordsService,
+	hashcashService hashcashService,
 	logger *log.Logger,
 ) *server {
 	return &server{
@@ -182,6 +183,7 @@ func NewServer(
 		readTimeout:         readTimeout,
 		storage:             storage,
 		wisdomWordsService:  wisdomWordsService,
+		hashcashService:     hashcashService,
 		logger:              logger,
 	}
 }

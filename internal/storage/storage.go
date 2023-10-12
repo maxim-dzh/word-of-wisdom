@@ -3,23 +3,23 @@ package storage
 import (
 	"sync"
 
-	"github.com/maxim-dzh/word-of-wisdom/internal/hashcash"
+	"github.com/maxim-dzh/word-of-wisdom/internal/domain"
 )
 
 type storage struct {
 	sync.RWMutex
-	challenges map[string]*hashcash.Header
+	challenges map[string]*domain.HashcashHeader
 }
 
 // SetChallenge saves a challenge
-func (s *storage) SetChallenge(id string, header *hashcash.Header) {
+func (s *storage) SetChallenge(id string, header *domain.HashcashHeader) {
 	s.Lock()
 	s.challenges[id] = header
 	s.Unlock()
 }
 
 // GetChallenge returns a challenge by id
-func (s *storage) GetChallenge(id string) (header *hashcash.Header, exists bool) {
+func (s *storage) GetChallenge(id string) (header *domain.HashcashHeader, exists bool) {
 	s.RLock()
 	header, exists = s.challenges[id]
 	s.RUnlock()
@@ -36,6 +36,6 @@ func (s *storage) DeleteChallenge(id string) {
 // NewStorage returns a new storage instance
 func NewStorage() *storage {
 	return &storage{
-		challenges: make(map[string]*hashcash.Header),
+		challenges: make(map[string]*domain.HashcashHeader),
 	}
 }

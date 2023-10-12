@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/goleak"
+
+	"github.com/maxim-dzh/word-of-wisdom/internal/domain"
 )
 
 type hashcashTestSuite struct {
@@ -18,7 +20,8 @@ type hashcashTestSuite struct {
 
 	// testing data
 	headerString string
-	header       *Header
+	header       *domain.HashcashHeader
+	service      *service
 }
 
 func (s *hashcashTestSuite) SetupTest() {
@@ -26,8 +29,8 @@ func (s *hashcashTestSuite) SetupTest() {
 	s.err = errors.New("error")
 	s.currentGoroutines = goleak.IgnoreCurrent()
 	s.headerString = "1:10:12343:b212c6f7-6a05-4bd1-b181-467e12f0cb30::WCNLFUvub2oCUA==:MA=="
-
-	s.header = &Header{
+	s.service = NewService()
+	s.header = &domain.HashcashHeader{
 		Version:   1,
 		Bits:      10,
 		Timestamp: 12343,
@@ -40,13 +43,13 @@ func (s *hashcashTestSuite) TearDownTest() {
 	goleak.VerifyNone(s.T(), s.currentGoroutines)
 }
 
-func (s *hashcashTestSuite) TestString_Ok() {
-	headerString := s.header.String()
+func (s *hashcashTestSuite) TestFormatHeader_Ok() {
+	headerString := s.service.FormatHeader(s.header)
 	s.EqualValues(s.headerString, headerString)
 }
 
 func (s *hashcashTestSuite) TestParseString_Ok() {
-	header, err := ParseString(s.headerString)
+	header, err := s.service.ParseString(s.headerString)
 	s.Nil(err)
 	s.Equal(s.header, header)
 }

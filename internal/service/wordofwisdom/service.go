@@ -1,4 +1,4 @@
-package service
+package wordofwisdom
 
 import (
 	"math/rand"

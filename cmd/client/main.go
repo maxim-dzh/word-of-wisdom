@@ -14,7 +14,7 @@ import (
 	"golang.org/x/exp/slog"
 
 	"github.com/maxim-dzh/word-of-wisdom/internal/config"
-	"github.com/maxim-dzh/word-of-wisdom/internal/hashcash"
+	hashcashservice "github.com/maxim-dzh/word-of-wisdom/internal/service/hashcash"
 )
 
 func main() {
@@ -54,7 +54,8 @@ func main() {
 		logger.Error("failed to read the challenge data", "error", err)
 		return
 	}
-	challenge, err := hashcash.ParseString(challengeData)
+	svc := hashcashservice.NewService()
+	header, err := svc.ParseString(challengeData)
 	if err != nil {
 		logger.Error("failed to parse the challenge", "error", err)
 		return
@@ -63,7 +64,7 @@ func main() {
 	// calculate the counter and send the resulting header
 	timeoutCtx, timeoutCancel := context.WithTimeout(ctx, cfg.ChallengeTimeout)
 	defer timeoutCancel()
-	err = challenge.CalculateCounter(timeoutCtx)
+	err = svc.CalculateCounter(timeoutCtx, header)
 	if err != nil {
 		logger.Error("failed to calculate counter", "error", err)
 		return
@@ -77,7 +78,7 @@ func main() {
 	}
 	defer conn.Close()
 	reader = bufio.NewReader(conn)
-	_, err = fmt.Fprintf(conn, "%s\n", challenge.String())
+	_, err = fmt.Fprintf(conn, "%s\n", svc.FormatHeader(header))
 	if err != nil {
 		logger.Error("failed to send a challenge result", "error", err)
 		return

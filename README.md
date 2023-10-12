@@ -52,6 +52,74 @@ make test
 make lint
 ```
 
+## Code structure
+
+All go code entities in this repository are organized by specific order:
+
+```go
+package api
+
+import (
+    "standart/golang/libraries"
+
+    "external/golang/libraries"
+
+    "local/golang/libraries"
+)
+
+// constants
+const (
+    someConstant = 0
+)
+
+// variables
+var (
+    someVariable = 0
+)
+
+// private interfaces (dependencies)
+type somePrivate interface {
+    Do() (err error)
+}
+
+// Private struct which has list of methods
+// it is private because the better way to communicate between packages is by private interfaces.
+// We initialize the structure by the constructor, passing all dependencies,
+// otherwise we risk forgetting to pass some dependency and creating a structure in an invalid state
+type privateImplementationOfSomePublicInterface struct {
+    somePrivate somePrivate
+}
+
+// public methods
+func (p *privateImplementationOfSomePublicInterface) Do() (err error) {
+
+    return
+}
+
+// private methods
+func (p *privateImplementationOfSomePublicInterface) some() {
+
+}
+
+// public functions
+func SomePublicFunction() {
+
+}
+
+// private functions
+func somePrivateFunction() {
+
+}
+
+// functions that receives dependencies and returns a new instance of the implementation
+func NewPrivateImplementationOfSomePublicInterface(somePrivate somePrivate) &somePrivate {
+    return &privateImplementationOfSomePublicInterface{
+        somePrivate: somePrivate,
+    }
+}
+
+```
+
 ## Why Hashcash?
 
 - Hashcash algorithm is relatively easy to implement

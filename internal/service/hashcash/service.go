@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/maxim-dzh/word-of-wisdom/internal/domain"
 )
 
 const (
@@ -18,50 +20,43 @@ const (
 	headerStringFormat = "%d:%d:%s:%s::%s:%s"
 )
 
-// Header is an object representation of the hashcash header
-type Header struct {
-	Version   int
-	Bits      uint
-	Timestamp int64
-	Resource  string
-	Random    string
-	Counter   uint64
+type service struct {
 }
 
 // CalculateCounter finds the counter which is needed for getting the hash
 // that satisfies the requirements
-func (h *Header) CalculateCounter(ctx context.Context) (err error) {
+func (s *service) CalculateCounter(ctx context.Context, header *domain.HashcashHeader) (err error) {
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			if BitsAmountIsCorrect(h.Bits, sha256.Sum256([]byte(h.String()))) {
+			if s.CheckBits(header.Bits, sha256.Sum256([]byte(s.FormatHeader(header)))) {
 				return
 			}
-			if h.Counter == math.MaxUint {
+			if header.Counter == math.MaxUint {
 				return fmt.Errorf("failed to calculate the counter")
 			}
-			h.Counter++
+			header.Counter++
 		}
 	}
 }
 
-// String returns the header as a string
-func (h *Header) String() string {
+// FormatHeader returns the header as a string
+func (s *service) FormatHeader(header *domain.HashcashHeader) string {
 	return fmt.Sprintf(
 		headerStringFormat,
-		h.Version,
-		h.Bits,
-		strconv.FormatInt(h.Timestamp, 10),
-		h.Resource,
-		h.Random,
-		base64.StdEncoding.EncodeToString([]byte(strconv.FormatUint(h.Counter, 10))),
+		header.Version,
+		header.Bits,
+		strconv.FormatInt(header.Timestamp, 10),
+		header.Resource,
+		header.Random,
+		base64.StdEncoding.EncodeToString([]byte(strconv.FormatUint(header.Counter, 10))),
 	)
 }
 
-// BitsAmountIsCorrect checks if zero bits amount in result isn't less than the bitsAmount param
-func BitsAmountIsCorrect(bitsAmount uint, resultHash [32]byte) bool {
+// CheckBits checks if zero bits amount in result isn't less than the bitsAmount param value
+func (s *service) CheckBits(bitsAmount uint, resultHash [32]byte) bool {
 	resultNum := big.NewInt(0)
 	resultNum.SetBytes(resultHash[:])
 	targetNum := big.NewInt(1)
@@ -69,8 +64,8 @@ func BitsAmountIsCorrect(bitsAmount uint, resultHash [32]byte) bool {
 	return resultNum.Cmp(targetNum) == -1
 }
 
-// ParseString build a header structure from the string value
-func ParseString(header string) (*Header, error) {
+// ParseString builds a header structure from the string value
+func (s *service) ParseString(header string) (*domain.HashcashHeader, error) {
 	headerParts := strings.Split(header, ":")
 	if len(headerParts) != 7 {
 		return nil, fmt.Errorf("invalid header")
@@ -95,7 +90,7 @@ func ParseString(header string) (*Header, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse date parameter: %w", err)
 	}
-	return &Header{
+	return &domain.HashcashHeader{
 		Version:   version,
 		Bits:      uint(bits),
 		Timestamp: timestamp,
@@ -105,19 +100,24 @@ func ParseString(header string) (*Header, error) {
 	}, nil
 }
 
-// NewHeader returns a new hashcash header
-func NewHeader(bits uint, resource string) (*Header, error) {
+// GenerateHeader returns a new hashcash header
+func (s *service) GenerateHeader(bits uint, resource string) (*domain.HashcashHeader, error) {
 	// get random value
 	bytes := make([]byte, 10)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read random bytes: %w", err)
 	}
-	return &Header{
+	return &domain.HashcashHeader{
 		Version:   defaultVersion,
 		Bits:      bits,
 		Timestamp: time.Now().Unix(),
 		Resource:  resource,
 		Random:    base64.StdEncoding.EncodeToString(bytes),
 	}, nil
+}
+
+// NewService returns a new instance of the hashcash service
+func NewService() *service {
+	return &service{}
 }

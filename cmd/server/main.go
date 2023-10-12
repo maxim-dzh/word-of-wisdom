@@ -12,7 +12,8 @@ import (
 
 	"github.com/maxim-dzh/word-of-wisdom/internal/config"
 	serverpkg "github.com/maxim-dzh/word-of-wisdom/internal/server"
-	"github.com/maxim-dzh/word-of-wisdom/internal/service"
+	hashcashservice "github.com/maxim-dzh/word-of-wisdom/internal/service/hashcash"
+	wowservice "github.com/maxim-dzh/word-of-wisdom/internal/service/wordofwisdom"
 	"github.com/maxim-dzh/word-of-wisdom/internal/storage"
 )
 
@@ -46,7 +47,8 @@ func main() {
 		cfg.ChallengeTimeout,
 		cfg.ReadTimeout,
 		storage.NewStorage(),
-		service.NewService(words),
+		wowservice.NewService(words),
+		hashcashservice.NewService(),
 		logger,
 	)
 
