@@ -5,7 +5,7 @@
 ## Getting started
 
 - At first you have to install dependencies, at least Golang, to run the app locally or Docker.
-- Environment variables are set up in the docker-compose.yml or in the internal/config package if you run the app locally.
+- Environment variables are set up in the docker-compose.yml or can be specified when you start the app locally.
 - To run the app use one of the Makefile commands described below
 
 ## Dependencies:
@@ -19,13 +19,13 @@
 #### Start server locally (without docker):
 
 ```
-make start-server
+SERVER_ADDR=:8099 CHALLENGE_TIMEOUT=20s CHALLENGE_COMPLEXITY=10 READ_TIMEOUT=30s make start-server
 ```
 
 #### Start client locally (without docker):
 
 ```
-make start-client
+READ_TIMEOUT=30s SERVER_ADDR=:8099 make start-client
 ```
 
 #### Build docker images of server and client and run them by docker-compose:
